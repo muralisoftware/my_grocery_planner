@@ -285,7 +285,7 @@ const AddItemScreen = ({ route, navigation }) => {
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Unit Price (Estimated)</Text>
           <View style={[styles.priceInputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>$</Text>
+            <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>₹</Text>
             <TextInput
               style={[styles.priceInput, { color: colors.text }]}
               placeholder="0.00"

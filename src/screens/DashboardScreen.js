@@ -89,7 +89,7 @@ const DashboardScreen = ({ navigation }) => {
           </View>
           
           <Text style={[styles.spentNumber, { color: colors.text }]}>
-            ${totalSpent.toFixed(2)}
+            ₹{totalSpent.toFixed(2)}
           </Text>
           
           <View style={[styles.divider, { backgroundColor: colors.border }]} />

@@ -70,7 +70,7 @@ const ShoppingItem = ({ item, onPress, onTogglePress, onLongPress, onFavoritePre
             {item.price > 0 && (
               <View style={[styles.badge, { backgroundColor: theme === 'light' ? '#ECFDF5' : '#062F21' }]}>
                 <Text style={[styles.badgeText, { color: theme === 'light' ? '#059669' : '#34D399' }]}>
-                  ${(item.price * item.quantity).toFixed(2)} (${item.price.toFixed(2)}/ea)
+                  ₹{(item.price * item.quantity).toFixed(2)} (₹{item.price.toFixed(2)}/ea)
                 </Text>
               </View>
             )}

@@ -607,21 +607,21 @@ const ListDetailScreen = ({ route, navigation }) => {
           <View style={styles.budgetItem}>
             <Text style={[styles.budgetLabel, { color: colors.textSecondary }]}>SPENT</Text>
             <Text style={[styles.budgetVal, { color: colors.success }]}>
-              ${budgetBreakdown.spent.toFixed(2)}
+              ₹{budgetBreakdown.spent.toFixed(2)}
             </Text>
           </View>
           <View style={[styles.budgetDivider, { backgroundColor: colors.border }]} />
           <View style={styles.budgetItem}>
             <Text style={[styles.budgetLabel, { color: colors.textSecondary }]}>PENDING</Text>
             <Text style={[styles.budgetVal, { color: colors.primary }]}>
-              ${budgetBreakdown.remaining.toFixed(2)}
+              ₹{budgetBreakdown.remaining.toFixed(2)}
             </Text>
           </View>
           <View style={[styles.budgetDivider, { backgroundColor: colors.border }]} />
           <View style={styles.budgetItem}>
             <Text style={[styles.budgetLabel, { color: colors.textSecondary }]}>TOTAL EST.</Text>
             <Text style={[styles.budgetVal, { color: colors.text, fontWeight: '800' }]}>
-              ${budgetBreakdown.total.toFixed(2)}
+              ₹{budgetBreakdown.total.toFixed(2)}
             </Text>
           </View>
         </View>

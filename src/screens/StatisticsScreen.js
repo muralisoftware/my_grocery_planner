@@ -59,7 +59,7 @@ const StatisticsScreen = ({ navigation }) => {
       }
     });
 
-    // Convert map to array and sort by amount descending, filtering out categories with $0 spending
+    // Convert map to array and sort by amount descending, filtering out categories with ₹0 spending
     return Object.values(spendingMap)
       .filter(item => item.amount > 0)
       .sort((a, b) => b.amount - a.amount);
@@ -139,7 +139,7 @@ const StatisticsScreen = ({ navigation }) => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.wideStatNumber, { color: colors.text }]}>
-                ${(stats.totalAmountSpent || 0).toFixed(2)}
+                ₹{(stats.totalAmountSpent || 0).toFixed(2)}
               </Text>
               <Text style={[styles.wideStatLabel, { color: colors.textSecondary }]}>Total Budget Spent</Text>
             </View>
@@ -169,7 +169,7 @@ const StatisticsScreen = ({ navigation }) => {
                           </Text>
                         </View>
                         <Text style={[styles.chartCount, { color: colors.text, fontWeight: '700' }]}>
-                          ${cat.amount.toFixed(2)}
+                          ₹{cat.amount.toFixed(2)}
                         </Text>
                       </View>
 

@@ -125,7 +125,7 @@ export const formatListForSharingBudget = (listName, items) => {
     text += `*To Buy:*\n`;
     pending.forEach(item => {
       const cost = (item.price || 0) * (item.quantity || 1);
-      const costStr = cost > 0 ? ` - $${cost.toFixed(2)}` : '';
+      const costStr = cost > 0 ? ` - ₹${cost.toFixed(2)}` : '';
       const qtyStr = item.quantity ? ` - ${item.quantity} ${item.unit || ''}` : '';
       text += `☐ ${item.name}${qtyStr}${costStr}\n`;
     });
@@ -136,7 +136,7 @@ export const formatListForSharingBudget = (listName, items) => {
     text += `*Completed:*\n`;
     completed.forEach(item => {
       const cost = (item.price || 0) * (item.quantity || 1);
-      const costStr = cost > 0 ? ` - $${cost.toFixed(2)}` : '';
+      const costStr = cost > 0 ? ` - ₹${cost.toFixed(2)}` : '';
       const qtyStr = item.quantity ? ` - ${item.quantity} ${item.unit || ''}` : '';
       text += `☑ ~${item.name}${qtyStr}${costStr}~\n`;
     });
@@ -144,9 +144,9 @@ export const formatListForSharingBudget = (listName, items) => {
   }
 
   text += `*BUDGET OVERVIEW:*\n`;
-  text += `• Spent: $${spent.toFixed(2)}\n`;
-  text += `• Remaining: $${remaining.toFixed(2)}\n`;
-  text += `• Total Est.: $${total.toFixed(2)}\n`;
+  text += `• Spent: ₹${spent.toFixed(2)}\n`;
+  text += `• Remaining: ₹${remaining.toFixed(2)}\n`;
+  text += `• Total Est.: ₹${total.toFixed(2)}\n`;
 
   text += `\nCreated via *My Grocery Planner*`;
   return text;
@@ -230,8 +230,8 @@ export const generatePdfHtml = (listName, items) => {
           <td style="font-weight: 500;">${item.name}</td>
           <td><span class="${badgeClass}">${badgeText}</span></td>
           <td>${item.quantity} ${item.unit || ''}</td>
-          <td>${item.price > 0 ? `$${item.price.toFixed(2)}` : '-'}</td>
-          <td style="text-align: right; font-weight: 600;">${itemCost > 0 ? `$${itemCost.toFixed(2)}` : '-'}</td>
+          <td>${item.price > 0 ? `₹${item.price.toFixed(2)}` : '-'}</td>
+          <td style="text-align: right; font-weight: 600;">${itemCost > 0 ? `₹${itemCost.toFixed(2)}` : '-'}</td>
         </tr>
       `;
     });
@@ -288,10 +288,10 @@ export const generatePdfHtml = (listName, items) => {
           ${rowsHtml}
           <tr class="total-row">
             <td colspan="3" style="font-weight: 600; color: #4B5563; text-decoration: none !important;">
-              Spent: $${spent.toFixed(2)} &nbsp;&bull;&nbsp; Pending: $${remaining.toFixed(2)}
+              Spent: ₹${spent.toFixed(2)} &nbsp;&bull;&nbsp; Pending: ₹${remaining.toFixed(2)}
             </td>
             <td colspan="3" style="text-align: right; font-size: 14px; color: #6D28D9; font-weight: 800; text-decoration: none !important;">
-              Total Estimated: $${total.toFixed(2)}
+              Total Estimated: ₹${total.toFixed(2)}
             </td>
           </tr>
         </tbody>
