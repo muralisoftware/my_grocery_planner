@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AsyncStorageService } from '../storage/AsyncStorageService';
 import { CATEGORIES } from '../utils/helpers';
+import { NotificationService } from '../utils/notifications';
 
 const AppContext = createContext();
 
@@ -69,6 +70,11 @@ export const AppProvider = ({ children }) => {
 
   const deleteList = async (listId) => {
     try {
+      const targetList = lists.find(list => String(list.id) === String(listId));
+      if (targetList && targetList.reminder && targetList.reminder.id) {
+        await NotificationService.cancelNotification(targetList.reminder.id);
+      }
+
       setLists(prevLists => {
         const updatedLists = prevLists.filter(list => String(list.id) !== String(listId));
         AsyncStorageService.saveLists(updatedLists);
@@ -91,6 +97,7 @@ export const AppProvider = ({ children }) => {
               quantity: parseFloat(itemData.quantity) || 1,
               unit: itemData.unit || 'pcs',
               category: itemData.category || 'Groceries',
+              price: parseFloat(itemData.price) || 0, // NEW field
               completed: false,
               favorite: itemData.favorite || false
             };
@@ -114,12 +121,22 @@ export const AppProvider = ({ children }) => {
     try {
       let completedItemName = null;
       let uncompletedItemName = null;
+      let costDifference = 0;
 
       // Find if completion status is changing using current lists state (safely scoped)
       const targetList = lists.find(list => String(list.id) === String(listId));
       const targetItem = targetList?.items.find(item => String(item.id) === String(itemId));
       if (targetItem) {
-        if (updatedFields.completed === true && !targetItem.completed) {
+        const oldCost = (targetItem.price || 0) * (targetItem.quantity || 1);
+        const isCompletedNow = updatedFields.completed !== undefined ? updatedFields.completed : targetItem.completed;
+        
+        if (targetItem.completed && isCompletedNow) {
+          // Stayed completed, calculate price/quantity change
+          const newPrice = updatedFields.price !== undefined ? parseFloat(updatedFields.price) : targetItem.price;
+          const newQuantity = updatedFields.quantity !== undefined ? parseFloat(updatedFields.quantity) : targetItem.quantity;
+          const newCost = (newPrice || 0) * (newQuantity || 1);
+          costDifference = newCost - oldCost;
+        } else if (updatedFields.completed === true && !targetItem.completed) {
           completedItemName = targetItem.name;
         } else if (updatedFields.completed === false && targetItem.completed) {
           uncompletedItemName = targetItem.name;
@@ -146,13 +163,21 @@ export const AppProvider = ({ children }) => {
 
       // Update stats if item completion changed
       if (completedItemName) {
-        await AsyncStorageService.incrementStats('purchased', completedItemName);
+        const itemCost = (targetItem.price || 0) * (targetItem.quantity || 1);
+        await AsyncStorageService.incrementStats('purchased', completedItemName, itemCost);
         const updatedStats = await AsyncStorageService.getStats();
         setStats(updatedStats);
       } else if (uncompletedItemName) {
-        await AsyncStorageService.decrementStats('purchased', uncompletedItemName);
+        const itemCost = (targetItem.price || 0) * (targetItem.quantity || 1);
+        await AsyncStorageService.decrementStats('purchased', uncompletedItemName, itemCost);
         const updatedStats = await AsyncStorageService.getStats();
         setStats(updatedStats);
+      } else if (costDifference !== 0) {
+        // Adjust stats for price/quantity changes on completed items
+        const stats = await AsyncStorageService.getStats();
+        stats.totalAmountSpent = Math.max(0, (stats.totalAmountSpent || 0) + costDifference);
+        await AsyncStorageService.saveStats(stats);
+        setStats(stats);
       }
     } catch (e) {
       console.error('Error in updateItemInList:', e);
@@ -216,6 +241,116 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // List Reminders Management
+  const setListReminder = async (listId, reminder) => {
+    try {
+      setLists(prevLists => {
+        const updatedLists = prevLists.map(list => {
+          if (String(list.id) === String(listId)) {
+            return {
+              ...list,
+              reminder: reminder // { id: String, date: String }
+            };
+          }
+          return list;
+        });
+        AsyncStorageService.saveLists(updatedLists);
+        return updatedLists;
+      });
+    } catch (e) {
+      console.error('Error setting list reminder in AppContext:', e);
+    }
+  };
+
+  const cancelListReminder = async (listId) => {
+    try {
+      const targetList = lists.find(list => String(list.id) === String(listId));
+      if (targetList && targetList.reminder && targetList.reminder.id) {
+        await NotificationService.cancelNotification(targetList.reminder.id);
+      }
+
+      setLists(prevLists => {
+        const updatedLists = prevLists.map(list => {
+          if (String(list.id) === String(listId)) {
+            const { reminder, ...rest } = list;
+            return rest;
+          }
+          return list;
+        });
+        AsyncStorageService.saveLists(updatedLists);
+        return updatedLists;
+      });
+    } catch (e) {
+      console.error('Error cancelling list reminder in AppContext:', e);
+    }
+  };
+
+  const clearAllListReminders = async () => {
+    try {
+      setLists(prevLists => {
+        const updatedLists = prevLists.map(list => {
+          const { reminder, ...rest } = list;
+          return rest;
+        });
+        AsyncStorageService.saveLists(updatedLists);
+        return updatedLists;
+      });
+    } catch (e) {
+      console.error('Error clearing all list reminders in AppContext:', e);
+    }
+  };
+
+  const getBackupData = () => {
+    try {
+      return JSON.stringify({
+        lists,
+        favorites,
+        stats,
+        theme,
+        version: '1.0.0',
+        exportedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Error generating backup data string:', e);
+      return '';
+    }
+  };
+
+  const restoreBackupData = async (jsonString) => {
+    try {
+      const parsed = JSON.parse(jsonString.trim());
+      if (parsed && Array.isArray(parsed.lists)) {
+        // Update lists
+        setLists(parsed.lists);
+        await AsyncStorageService.saveLists(parsed.lists);
+        
+        // Update favorites
+        if (Array.isArray(parsed.favorites)) {
+          setFavorites(parsed.favorites);
+          await AsyncStorageService.saveFavorites(parsed.favorites);
+        }
+        
+        // Update stats
+        if (parsed.stats) {
+          setStats(parsed.stats);
+          await AsyncStorageService.saveStats(parsed.stats);
+        }
+        
+        // Update theme
+        if (parsed.theme) {
+          setTheme(parsed.theme);
+          await AsyncStorageService.saveTheme(parsed.theme);
+        }
+        
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Error restoring backup data:', e);
+      return false;
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -232,6 +367,11 @@ export const AppProvider = ({ children }) => {
         deleteItemFromList,
         toggleFavoriteItem,
         importTemplateToList,
+        setListReminder,
+        cancelListReminder,
+        clearAllListReminders,
+        getBackupData,
+        restoreBackupData,
         refreshData: loadAllData
       }}
     >

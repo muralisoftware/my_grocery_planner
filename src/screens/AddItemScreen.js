@@ -14,7 +14,21 @@ import { useApp } from '../context/AppContext';
 import { ThemeColors } from '../utils/theme';
 import { CATEGORIES, customAlert } from '../utils/helpers';
 
-const COMMON_UNITS = ['KG', 'Liters', 'Packets', 'Pcs', 'Grams', 'Boxes', 'Bottles'];
+const CATEGORY_UNITS = {
+  Groceries: ['Pcs', 'KG', 'Packets', 'Grams', 'Boxes', 'Liters'],
+  Vegetables: ['KG', 'Grams', 'Pcs', 'Dozens'],
+  Fruits: ['KG', 'Pcs', 'Dozens', 'Grams'],
+  Dairy: ['Packets', 'Liters', 'Bottles', 'Pcs'],
+  Household: ['Pcs', 'Bottles', 'Packets', 'Boxes'],
+  Medical: ['Tablets', 'Capsules', 'Bottles', 'Mg', 'Ml', 'Pcs', 'Packs'],
+  'Pet Food': ['Packets', 'KG', 'Cans', 'Pcs', 'Grams']
+};
+
+const DEFAULT_UNITS = ['Pcs', 'KG', 'Packets', 'Liters', 'Grams', 'Boxes', 'Bottles'];
+
+const getCommonUnitsForCategory = (category) => {
+  return CATEGORY_UNITS[category] || DEFAULT_UNITS;
+};
 
 const AddItemScreen = ({ route, navigation }) => {
   const { listId, itemToEdit } = route.params;
@@ -27,6 +41,7 @@ const AddItemScreen = ({ route, navigation }) => {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState('Pcs');
+  const [price, setPrice] = useState(''); // NEW price state
   const [selectedCategory, setSelectedCategory] = useState('Groceries');
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -36,6 +51,7 @@ const AddItemScreen = ({ route, navigation }) => {
       setName(itemToEdit.name);
       setQuantity(itemToEdit.quantity.toString());
       setUnit(itemToEdit.unit || 'Pcs');
+      setPrice(itemToEdit.price ? itemToEdit.price.toString() : '');
       setSelectedCategory(itemToEdit.category || 'Groceries');
       setIsFavorite(itemToEdit.favorite || false);
     }
@@ -86,6 +102,7 @@ const AddItemScreen = ({ route, navigation }) => {
       name: cleanName,
       quantity: parseFloat(quantity) || 1,
       unit: unit,
+      price: parseFloat(price) || 0,
       category: selectedCategory,
       favorite: isFavorite
     };
@@ -240,7 +257,7 @@ const AddItemScreen = ({ route, navigation }) => {
         {/* Common Units Quick Selection */}
         <View style={styles.section}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unitsRow}>
-            {COMMON_UNITS.map((u) => {
+            {getCommonUnitsForCategory(selectedCategory).map((u) => {
               const isSelected = unit.toLowerCase() === u.toLowerCase();
               return (
                 <TouchableOpacity
@@ -264,6 +281,23 @@ const AddItemScreen = ({ route, navigation }) => {
           </ScrollView>
         </View>
 
+        {/* Estimated Price Input */}
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Unit Price (Estimated)</Text>
+          <View style={[styles.priceInputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+            <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>$</Text>
+            <TextInput
+              style={[styles.priceInput, { color: colors.text }]}
+              placeholder="0.00"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="decimal-pad"
+              value={price}
+              onChangeText={setPrice}
+              maxLength={8}
+            />
+          </View>
+        </View>
+
         {/* Category Picker Grid */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Category</Text>
@@ -281,10 +315,28 @@ const AddItemScreen = ({ route, navigation }) => {
                       width: '47%'
                     }
                   ]}
-                  onPress={() => setSelectedCategory(cat.name)}
+                  onPress={() => {
+                    setSelectedCategory(cat.name);
+                    
+                    // Auto-suggest default unit based on selected category 
+                    // only if the unit field is empty or matches a default generic unit
+                    const defaultUnitMap = {
+                      Groceries: 'Pcs',
+                      Vegetables: 'KG',
+                      Fruits: 'KG',
+                      Dairy: 'Packets',
+                      Household: 'Pcs',
+                      Medical: 'Tablets',
+                      'Pet Food': 'Packets'
+                    };
+                    const genericUnits = ['pcs', 'kg', 'liters', 'packets', 'grams', 'boxes', 'bottles', ''];
+                    if (genericUnits.includes(unit.trim().toLowerCase())) {
+                      setUnit(defaultUnitMap[cat.name] || 'Pcs');
+                    }
+                  }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
+                  <Ionicons name={cat.icon} size={15} color={isSelected ? '#FFFFFF' : cat.color} style={{ marginRight: 6 }} />
                   <Text 
                     style={[
                       styles.categoryName, 
@@ -475,10 +527,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  categoryEmoji: {
-    fontSize: 18,
-    marginRight: 8,
-  },
+
   categoryName: {
     fontSize: 13,
   },
@@ -531,6 +580,25 @@ const styles = StyleSheet.create({
   deleteBtnText: {
     fontWeight: '700',
     fontSize: 16,
+  },
+  priceInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    height: 48,
+    paddingHorizontal: 16,
+  },
+  currencySymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 15,
+    height: '100%',
+    padding: 0,
   },
 });
 

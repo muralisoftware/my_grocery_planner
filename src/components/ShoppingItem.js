@@ -9,9 +9,8 @@ const ShoppingItem = ({ item, onPress, onTogglePress, onLongPress, onFavoritePre
   const { theme } = useApp();
   const colors = ThemeColors[theme];
 
-  // Find the category to display emoji and custom color
+  // Find the category to display custom color
   const categoryInfo = CATEGORIES.find(c => c.name === item.category);
-  const categoryEmoji = categoryInfo ? categoryInfo.emoji : '🍚';
   const categoryColor = categoryInfo ? categoryInfo.color : colors.primary;
 
   return (
@@ -37,6 +36,8 @@ const ShoppingItem = ({ item, onPress, onTogglePress, onLongPress, onFavoritePre
             color={item.completed ? colors.success : colors.primary} 
           />
         </TouchableOpacity>
+
+
 
         <TouchableOpacity 
           style={styles.textContainer}
@@ -65,10 +66,18 @@ const ShoppingItem = ({ item, onPress, onTogglePress, onLongPress, onFavoritePre
                 </Text>
               </View>
             )}
+
+            {item.price > 0 && (
+              <View style={[styles.badge, { backgroundColor: theme === 'light' ? '#ECFDF5' : '#062F21' }]}>
+                <Text style={[styles.badgeText, { color: theme === 'light' ? '#059669' : '#34D399' }]}>
+                  ${(item.price * item.quantity).toFixed(2)} (${item.price.toFixed(2)}/ea)
+                </Text>
+              </View>
+            )}
             
-            <View style={[styles.badge, { backgroundColor: categoryColor + '1C' }]}>
-              <Text style={[styles.badgeText, { color: theme === 'light' ? categoryColor : '#FFFFFF' }]}>
-                {categoryEmoji} {item.category}
+            <View style={[styles.badge, { backgroundColor: categoryColor + '10' }]}>
+              <Text style={[styles.badgeText, { color: theme === 'light' ? categoryColor : '#C4B5FD', fontSize: 10 }]}>
+                {item.category}
               </Text>
             </View>
           </View>
@@ -114,11 +123,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 2,
   },
+
+
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',

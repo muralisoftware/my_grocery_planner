@@ -26,9 +26,9 @@ const SplashScreen = ({ navigation }) => {
       })
     ]).start();
 
-    // Redirect to Home after 2.5 seconds
+    // Redirect to Dashboard after 2.5 seconds
     const timer = setTimeout(() => {
-      navigation.replace('Home');
+      navigation.replace('Dashboard');
     }, 2500);
 
     return () => clearTimeout(timer);

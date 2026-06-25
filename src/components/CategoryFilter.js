@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { ThemeColors } from '../utils/theme';
 import { CATEGORIES } from '../utils/helpers';
@@ -9,7 +10,7 @@ const CategoryFilter = ({ selectedCategory, onSelectCategory }) => {
   const colors = ThemeColors[theme];
 
   // Include "All" option at the beginning
-  const allCategories = [{ id: 'all', name: 'All', emoji: '🛍️' }, ...CATEGORIES];
+  const allCategories = [{ id: 'all', name: 'All', icon: 'apps' }, ...CATEGORIES];
 
   return (
     <ScrollView 
@@ -33,14 +34,12 @@ const CategoryFilter = ({ selectedCategory, onSelectCategory }) => {
             onPress={() => onSelectCategory(cat.name)}
             activeOpacity={0.7}
           >
-            <Text 
-              style={[
-                styles.emojiText, 
-                { color: isSelected ? '#FFFFFF' : colors.text }
-              ]}
-            >
-              {cat.emoji}
-            </Text>
+            <Ionicons 
+              name={cat.icon} 
+              size={14} 
+              color={isSelected ? '#FFFFFF' : colors.primary} 
+              style={{ marginRight: 6 }} 
+            />
             <Text 
               style={[
                 styles.nameText, 
@@ -79,10 +78,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  emojiText: {
-    fontSize: 14,
-    marginRight: 6,
-  },
+
   nameText: {
     fontSize: 13,
   },

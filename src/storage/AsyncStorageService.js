@@ -11,6 +11,7 @@ const KEYS = {
 const INITIAL_STATS = {
   totalListsCreated: 0,
   totalPurchasedItems: 0,
+  totalAmountSpent: 0, // Track total money spent
   mostPurchased: {} // Map of itemName -> count
 };
 
@@ -107,13 +108,14 @@ export const AsyncStorageService = {
     }
   },
 
-  async incrementStats(type, itemName = null) {
+  async incrementStats(type, itemName = null, cost = 0) {
     try {
       const stats = await this.getStats();
       if (type === 'lists') {
         stats.totalListsCreated = (stats.totalListsCreated || 0) + 1;
       } else if (type === 'purchased' && itemName) {
         stats.totalPurchasedItems = (stats.totalPurchasedItems || 0) + 1;
+        stats.totalAmountSpent = (stats.totalAmountSpent || 0) + cost;
         
         // Normalize name for counting
         const cleanName = itemName.trim().toLowerCase();
@@ -129,11 +131,12 @@ export const AsyncStorageService = {
     }
   },
 
-  async decrementStats(type, itemName = null) {
+  async decrementStats(type, itemName = null, cost = 0) {
     try {
       const stats = await this.getStats();
       if (type === 'purchased' && itemName) {
         stats.totalPurchasedItems = Math.max(0, (stats.totalPurchasedItems || 0) - 1);
+        stats.totalAmountSpent = Math.max(0, (stats.totalAmountSpent || 0) - cost);
         
         const cleanName = itemName.trim().toLowerCase();
         const displayKey = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);

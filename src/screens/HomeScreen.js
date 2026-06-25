@@ -16,6 +16,7 @@ import { useApp } from '../context/AppContext';
 import { ThemeColors } from '../utils/theme';
 import { formatDate, customAlert } from '../utils/helpers';
 import EmptyState from '../components/EmptyState';
+import BottomTabBar from '../components/BottomTabBar';
 
 const HomeScreen = ({ navigation }) => {
   const { lists, theme, addList, deleteList, loading } = useApp();
@@ -74,6 +75,22 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  // Format reminder date in short format (e.g. Jun 25, 10:10 AM)
+  const formatReminderDateShort = (dateStr) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
+      return date.toLocaleDateString(undefined, { 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return '';
+    }
+  };
+
   // Render a Single Shopping List Card
   const renderListItem = ({ item }) => {
     const totalItems = item.items ? item.items.length : 0;
@@ -103,6 +120,15 @@ const HomeScreen = ({ navigation }) => {
                 {item.name}
               </Text>
             </View>
+
+            {item.reminder && (
+              <View style={[styles.reminderRow, { marginBottom: 12 }]}>
+                <Ionicons name="alarm-outline" size={14} color={colors.warning} style={styles.statIcon} />
+                <Text style={[styles.reminderText, { color: colors.warning }]} numberOfLines={1}>
+                  Reminder: {formatReminderDateShort(item.reminder.date)}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.cardFooter}>
               <View style={styles.statsRow}>
@@ -151,22 +177,6 @@ const HomeScreen = ({ navigation }) => {
       {/* Header bar */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>My Grocery Lists</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={[styles.headerBtn, { backgroundColor: theme === 'light' ? '#EDE9FE' : '#1E1530' }]} 
-            onPress={() => navigation.navigate('Statistics')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="stats-chart" size={20} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.headerBtn, { backgroundColor: theme === 'light' ? '#EDE9FE' : '#1E1530' }]} 
-            onPress={() => navigation.navigate('Settings')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="settings" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Main List */}
@@ -243,6 +253,9 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
       )}
+
+      {/* Navigation Tab Bar Menu */}
+      <BottomTabBar activeTab="Home" navigation={navigation} />
     </View>
   );
 };
@@ -262,7 +275,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontFamily: 'serif',
+    fontStyle: 'italic',
   },
   headerButtons: {
     flexDirection: 'row',
@@ -277,16 +292,15 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 160, // Space for FAB + TabBar
   },
   listCard: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 18,
     marginBottom: 14,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 3,
   },
   cardHeader: {
@@ -313,6 +327,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reminderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
   statIcon: {
     marginRight: 4,
   },
@@ -332,7 +355,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 84, // Raised to clear Bottom Tab Bar
     right: 24,
     width: 60,
     height: 60,

@@ -100,6 +100,46 @@ export const NotificationService = {
     }
   },
 
+  async scheduleListReminder(listId, listName, date) {
+    if (Platform.OS === 'web') return false;
+
+    const hasPermission = await this.requestPermission();
+    if (!hasPermission) {
+      alert('Notification permissions are required to schedule reminders.');
+      return false;
+    }
+
+    try {
+      // Schedule a single reminder for a specific grocery list conforming to SDK 56 NotificationTriggerInput
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `Time to buy: ${listName}! 🛒`,
+          body: `Don't forget to purchase items on your "${listName}" list!`,
+          sound: true,
+          data: { listId, listName },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: date,
+          channelId: Platform.OS === 'android' ? 'default' : undefined,
+        },
+      });
+      return identifier;
+    } catch (e) {
+      console.error('Error scheduling list reminder', e);
+      return null;
+    }
+  },
+
+  async cancelNotification(identifier) {
+    if (Platform.OS === 'web') return;
+    try {
+      await Notifications.cancelScheduledNotificationAsync(identifier);
+    } catch (e) {
+      console.error('Error cancelling notification', e);
+    }
+  },
+
   async cancelAll() {
     if (Platform.OS === 'web') return;
     try {

@@ -7,20 +7,65 @@ import {
   ScrollView, 
   TextInput, 
   Alert,
-  StatusBar
+  StatusBar,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useApp } from '../context/AppContext';
 import { ThemeColors } from '../utils/theme';
 import { NotificationService } from '../utils/notifications';
 import { customAlert } from '../utils/helpers';
+import BottomTabBar from '../components/BottomTabBar';
 
 const SettingsScreen = ({ navigation }) => {
-  const { theme, toggleTheme, favorites, toggleFavoriteItem } = useApp();
+  const { theme, toggleTheme, favorites, toggleFavoriteItem, clearAllListReminders, getBackupData, restoreBackupData } = useApp();
   const colors = ThemeColors[theme];
 
   // New Favorite Input State
   const [newFavName, setNewFavName] = useState('');
+
+  // Backup & Import Modal States
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [backupInput, setBackupInput] = useState('');
+
+  // Handle Export Backup
+  const handleExportBackup = async () => {
+    try {
+      const dataStr = getBackupData();
+      await Clipboard.setStringAsync(dataStr);
+      customAlert(
+        'Export Successful',
+        'All your shopping lists, favorites, and statistics have been successfully copied to your clipboard. Paste and save this backup code in a safe place (e.g. Notes app, Email).'
+      );
+    } catch (e) {
+      console.error('Export backup error', e);
+      customAlert('Error', 'Failed to copy backup data to clipboard.');
+    }
+  };
+
+  // Handle Import Backup
+  const handleImportBackup = async () => {
+    const trimmedInput = backupInput.trim();
+    if (!trimmedInput) {
+      customAlert('Required', 'Please paste the backup code.');
+      return;
+    }
+
+    try {
+      const success = await restoreBackupData(trimmedInput);
+      if (success) {
+        setBackupInput('');
+        setImportModalVisible(false);
+        customAlert('Restore Successful', 'All lists, favorites, and spending statistics have been successfully restored!');
+      } else {
+        customAlert('Import Failed', 'Invalid backup code format. Please ensure you copied the complete code correctly.');
+      }
+    } catch (e) {
+      console.error('Import backup error', e);
+      customAlert('Error', 'Failed to restore data: ' + e.message);
+    }
+  };
 
   // Handle adding new custom favorite item
   const handleAddFavorite = async () => {
@@ -84,23 +129,23 @@ const SettingsScreen = ({ navigation }) => {
   // Cancel notifications
   const handleCancelNotifications = async () => {
     await NotificationService.cancelAll();
+    await clearAllListReminders();
     customAlert('Cancelled', 'All scheduled notifications and reminders have been removed.');
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
 
       {/* Header bar */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
-        <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.settingsContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.settingsContent}
+      >
         {/* Theme Settings Section */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Theme & Style</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -289,6 +334,68 @@ const SettingsScreen = ({ navigation }) => {
           )}
         </View>
 
+        {/* Backup & Data Portability Section */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Backup & Data Portability</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+            onPress={handleExportBackup}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingRowLeft}>
+              <Ionicons name="cloud-upload-outline" size={22} color={colors.primary} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.settingText, { color: colors.text }]}>Export Backup Code</Text>
+                <Text style={[styles.subtext, { color: colors.textSecondary }]}>Copy all grocery data to clipboard</Text>
+              </View>
+            </View>
+            <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => setImportModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingRowLeft}>
+              <Ionicons name="cloud-download-outline" size={22} color={colors.primary} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.settingText, { color: colors.text }]}>Import Backup Code</Text>
+                <Text style={[styles.subtext, { color: colors.textSecondary }]}>Restore lists and stats from backup code</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Legal & Policies Section */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Legal & Policies</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingRowLeft}>
+              <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+              <Text style={[styles.settingText, { color: colors.text }]}>Privacy Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => navigation.navigate('TermsConditions')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingRowLeft}>
+              <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+              <Text style={[styles.settingText, { color: colors.text }]}>Terms & Conditions</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
         {/* App Info Section */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, padding: 16 }]}>
@@ -305,8 +412,68 @@ const SettingsScreen = ({ navigation }) => {
             <Text style={[styles.aboutVal, { color: colors.success, fontWeight: '700' }]}>🛡️ Offline-Only</Text>
           </View>
         </View>
+      </ScrollView>
+
+    {/* Import Backup Modal */}
+    {importModalVisible && (
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Import Backup</Text>
+            <TouchableOpacity onPress={() => { setImportModalVisible(false); setBackupInput(''); }} style={styles.closeModalBtn}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+            Paste your saved backup code below to restore your grocery planner data. This will overwrite all current lists, favorites, and statistics!
+          </Text>
+
+          <TextInput
+            style={[
+              styles.backupTextarea,
+              { 
+                color: colors.text, 
+                borderColor: colors.border,
+                backgroundColor: theme === 'light' ? '#F9FAFB' : '#1E1530'
+              }
+            ]}
+            placeholder="Paste your backup code block here..."
+            placeholderTextColor={colors.textSecondary}
+            value={backupInput}
+            onChangeText={setBackupInput}
+            multiline={true}
+            numberOfLines={6}
+            autoFocus={true}
+          />
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={[styles.modalBtn, styles.cancelBtn, { borderColor: colors.border }]}
+              onPress={() => {
+                setBackupInput('');
+                setImportModalVisible(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.modalBtn, styles.createBtn, { backgroundColor: colors.primary }]}
+              onPress={handleImportBackup}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.createBtnText}>Restore Data</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-    </ScrollView>
+    )}
+
+      {/* Navigation Tab Bar Menu */}
+      <BottomTabBar activeTab="Settings" navigation={navigation} />
+    </View>
   );
 };
 
@@ -328,11 +495,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontFamily: 'serif',
+    fontStyle: 'italic',
   },
   settingsContent: {
     padding: 20,
-    paddingBottom: 60,
+    paddingBottom: 90,
   },
   sectionTitle: {
     fontSize: 12,
@@ -477,6 +646,89 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 13,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    zIndex: 999,
+  },
+  modalContent: {
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeModalBtn: {
+    padding: 4,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  backupTextarea: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    height: 120,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtn: {
+    borderWidth: 1,
+  },
+  cancelBtnText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  createBtn: {
+    shadowColor: '#6D28D9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  createBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
 
